@@ -17,6 +17,10 @@ class ServiceHub
       if provider.match(consumer)
         consumer.callback(provider.service)
 
+    new Disposable =>
+      index = @providers.indexOf(provider)
+      @providers.splice(index, 1)
+
   consume: (keyPath, versionRange, callback) ->
     consumer = new Consumer(keyPath, versionRange, callback)
     @consumers.push(consumer)
