@@ -1,4 +1,4 @@
-# service-hub
+# service-hub [![Build Status](https://travis-ci.org/atom/service-hub.svg?branch=master)](https://travis-ci.org/atom/service-hub)
 
 A semantically versioned provider/consumer system for global application services.
 
