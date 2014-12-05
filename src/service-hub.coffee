@@ -1,14 +1,24 @@
+Consumer = require './consumer'
 Provider = require './provider'
 
 module.exports =
 class ServiceHub
   constructor: ->
+    @consumers = []
     @providers = []
 
   provide: (keyPath, version, service) ->
-    @providers.push(new Provider(keyPath, version, service))
+    provider = new Provider(keyPath, version, service)
+    @providers.push(provider)
+
+    for consumer in @consumers
+      if provider.match(consumer)
+        consumer.callback(provider.service)
 
   consume: (keyPath, versionRange, callback) ->
+    consumer = new Consumer(keyPath, versionRange, callback)
+    @consumers.push(consumer)
+
     for provider in @providers
-      if provider.match(keyPath, versionRange)
-        callback(provider.service)
+      if provider.match(consumer)
+        consumer.callback(provider.service)
