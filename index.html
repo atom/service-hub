@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="description" content="service-hub : A semantically versioned provider/consumer system for global application services.">
+
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+
+    <title>service-hub</title>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/atom/service-hub">View on GitHub</a>
+
+          <h1 id="project_title">service-hub</h1>
+          <h2 id="project_tagline">A semantically versioned provider/consumer system for global application services.</h2>
+
+            <section id="downloads">
+              <a class="zip_download_link" href="https://github.com/atom/service-hub/zipball/master">Download this project as a .zip file</a>
+              <a class="tar_download_link" href="https://github.com/atom/service-hub/tarball/master">Download this project as a tar.gz file</a>
+            </section>
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+        <p>The <code>order-pizza</code> library wants to provide a global service for use by other
+modules in the application. It calls provide on a global <code>ServiceHub</code> instance
+with the name of the service and the current semantic version of the API:</p>
+
+<div class="highlight highlight-coffee"><pre><span class="pl-c"># Provider</span>
+
+<span class="pl-sv">global</span>.services.provide <span class="pl-s1"><span class="pl-pds">"</span>order-pizza<span class="pl-pds">"</span></span>, <span class="pl-s1"><span class="pl-pds">"</span>1.0.0<span class="pl-pds">"</span></span>,
+  <span class="pl-en">placeOrder</span><span class="pl-k">:</span><span class="pl-vpf"> <span class="pl-vpf">(size, topping)</span></span> <span class="pl-st"><span class="pl-st">-&gt;</span></span> <span class="pl-c"># ...</span></pre></div>
+
+<p>Then two other libraries <em>consume</em> this service, ensuring they are compatible
+with its API by specifying a version range:</p>
+
+<div class="highlight highlight-coffee"><pre><span class="pl-c"># Consumer 1</span>
+
+<span class="pl-en">workingLate</span><span class="pl-k">:</span> <span class="pl-st"><span class="pl-st">-&gt;</span></span>
+  <span class="pl-sv">global</span>.services.consume <span class="pl-s1"><span class="pl-pds">"</span>order-pizza<span class="pl-pds">"</span></span>, <span class="pl-s1"><span class="pl-pds">"</span>^1.0.0<span class="pl-pds">"</span></span>, <span class="pl-vpf">(orderPizza)</span> <span class="pl-st">-&gt;</span>
+    orderPizza.placeOrder(<span class="pl-s1"><span class="pl-pds">"</span>medium<span class="pl-pds">"</span></span>, <span class="pl-s1"><span class="pl-pds">"</span>four cheese<span class="pl-pds">"</span></span>)
+
+<span class="pl-c"># Consumer 2</span>
+
+<span class="pl-en">burntDinner</span><span class="pl-k">:</span> <span class="pl-st"><span class="pl-st">-&gt;</span></span>
+  <span class="pl-sv">global</span>.services.consume <span class="pl-s1"><span class="pl-pds">"</span>order-pizza<span class="pl-pds">"</span></span>, <span class="pl-s1"><span class="pl-pds">"</span>^1.0.0<span class="pl-pds">"</span></span>, <span class="pl-vpf">(orderPizza)</span> <span class="pl-st">-&gt;</span>
+    orderPizza.placeOrder(<span class="pl-s1"><span class="pl-pds">"</span>large<span class="pl-pds">"</span></span>, <span class="pl-s1"><span class="pl-pds">"</span>pepperoni<span class="pl-pds">"</span></span>)</pre></div>
+
+<p>Now the author of the <code>order-pizza</code> makes a breaking change to the API. They
+start providing another instance of the service associated with the next major
+version number, converting the old service to a shim for compatibility:</p>
+
+<div class="highlight highlight-coffee"><pre><span class="pl-c"># Provider</span>
+
+<span class="pl-en">placeOrder </span><span class="pl-k">=</span><span class="pl-vpf"> <span class="pl-vpf">({size, toppings})</span></span> <span class="pl-st"><span class="pl-st">-&gt;</span></span> <span class="pl-c"># ...</span>
+
+<span class="pl-c"># Providing the new API</span>
+<span class="pl-sv">global</span>.services.provide <span class="pl-s1"><span class="pl-pds">"</span>order-pizza<span class="pl-pds">"</span></span>, <span class="pl-s1"><span class="pl-pds">"</span>2.0.0<span class="pl-pds">"</span></span>, {placeOrder}
+
+<span class="pl-c"># Shimming the old API</span>
+<span class="pl-sv">global</span>.services.provide <span class="pl-s1"><span class="pl-pds">"</span>order-pizza<span class="pl-pds">"</span></span>, <span class="pl-s1"><span class="pl-pds">"</span>1.0.0<span class="pl-pds">"</span></span>,
+  <span class="pl-en">placeOrder</span><span class="pl-k">:</span><span class="pl-vpf"> <span class="pl-vpf">(size, topping)</span></span> <span class="pl-st"><span class="pl-st">-&gt;</span></span>
+    placeOrder({size, <span class="pl-v"><span class="pl-v">toppings:</span></span> [topping]})</pre></div>
+
+<p>If at some point the API changed so drastically that it wasn't possible to shim
+previous versions, at least the outdated consumers wouldn't use the new API
+incorrectly. They would just fail to discover the service.</p>
+      </section>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">service-hub maintained by <a href="https://github.com/atom">atom</a></p>
+        <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+    
+
+  </body>
+</html>
