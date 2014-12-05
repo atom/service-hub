@@ -21,6 +21,7 @@
     }
   ],
   "dependencies": {
+    "event-kit": "^0.8.1",
     "semver": "^4.1.0"
   },
   "devDependencies": {

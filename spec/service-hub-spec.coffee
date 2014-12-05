@@ -26,3 +26,13 @@ describe "ServiceHub", ->
       hub.provide "b", "1.0.0", z: 3
 
       expect(services).toEqual [{x: 1}, {y: 2}]
+
+    it "returns a disposable that removes the consumer", ->
+      services = []
+      disposable = hub.consume "a", "^1.0.0", (service) -> services.push(service)
+
+      hub.provide "a", "1.0.0", x: 1
+      disposable.dispose()
+      hub.provide "a", "1.1.0", y: 2
+
+      expect(services).toEqual [{x: 1}]

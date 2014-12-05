@@ -1,3 +1,5 @@
+{Disposable} = require 'event-kit'
+
 Consumer = require './consumer'
 Provider = require './provider'
 
@@ -22,3 +24,7 @@ class ServiceHub
     for provider in @providers
       if provider.match(consumer)
         consumer.callback(provider.service)
+
+    new Disposable =>
+      index = @consumers.indexOf(consumer)
+      @consumers.splice(index, 1)
