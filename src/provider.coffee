@@ -1,8 +1,14 @@
 semver = require 'semver'
 
+{getValueAtKeyPath, setValueAtKeyPath} = require './helpers'
+
 module.exports =
 class Provider
-  constructor: (@keyPath, @version, @service) ->
+  constructor: (keyPath, @version, service) ->
+    @service = {}
+    setValueAtKeyPath(@service, keyPath, service)
 
-  match: ({keyPath, versionRange}) ->
-    @keyPath.indexOf(keyPath) is 0 and semver.satisfies(@version, versionRange)
+  provide: ({keyPath, versionRange, callback}) ->
+    if semver.satisfies(@version, versionRange)
+      if value = getValueAtKeyPath(@service, keyPath)
+        callback(value)

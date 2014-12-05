@@ -14,8 +14,7 @@ class ServiceHub
     @providers.push(provider)
 
     for consumer in @consumers
-      if provider.match(consumer)
-        consumer.callback(provider.service)
+      provider.provide(consumer)
 
     new Disposable =>
       index = @providers.indexOf(provider)
@@ -26,8 +25,7 @@ class ServiceHub
     @consumers.push(consumer)
 
     for provider in @providers
-      if provider.match(consumer)
-        consumer.callback(provider.service)
+      provider.provide(consumer)
 
     new Disposable =>
       index = @consumers.indexOf(consumer)
