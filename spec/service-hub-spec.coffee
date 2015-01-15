@@ -1,3 +1,4 @@
+{Disposable} = require 'event-kit'
 ServiceHub = require '../src/service-hub'
 
 describe "ServiceHub", ->
@@ -65,3 +66,17 @@ describe "ServiceHub", ->
       services = []
       disposable = hub.consume "a", "^1.0.0", (service) -> services.push(service)
       expect(services).toEqual [{y: 2}]
+
+    it "disposes of consumer disposables when the provider is removed", ->
+      provideDisposable = hub.provide "a", "1.0.0", x: 1
+
+      teardownConsumerSpy1 = jasmine.createSpy('teardownConsumer1')
+      teardownConsumerSpy2 = jasmine.createSpy('teardownConsumer2')
+
+      hub.consume "a", "^1.0.0", (service) -> new Disposable(teardownConsumerSpy1)
+      hub.consume "a", "^1.0.0", (service) -> new Disposable(teardownConsumerSpy2)
+
+      provideDisposable.dispose()
+
+      expect(teardownConsumerSpy1).toHaveBeenCalled()
+      expect(teardownConsumerSpy2).toHaveBeenCalled()
