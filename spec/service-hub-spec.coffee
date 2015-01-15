@@ -67,7 +67,7 @@ describe "ServiceHub", ->
       disposable = hub.consume "a", "^1.0.0", (service) -> services.push(service)
       expect(services).toEqual [{y: 2}]
 
-    it "disposes of consumer disposables when the provider is removed", ->
+    it "disposes of consumer disposables when the provider is disposed", ->
       provideDisposable = hub.provide "a", "1.0.0", x: 1
 
       teardownConsumerSpy1 = jasmine.createSpy('teardownConsumer1')
