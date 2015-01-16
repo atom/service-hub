@@ -28,6 +28,7 @@ class ServiceHub
       provider.provide(consumer)
 
     new Disposable =>
+      provider.destroy()
       index = @providers.indexOf(provider)
       @providers.splice(index, 1)
 
