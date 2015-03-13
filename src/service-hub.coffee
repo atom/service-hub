@@ -1,5 +1,4 @@
 {Disposable} = require 'event-kit'
-
 Consumer = require './consumer'
 Provider = require './provider'
 
@@ -21,7 +20,13 @@ class ServiceHub
   # Returns a {Disposable} on which `.dispose()` can be called to remove the
   # provided service.
   provide: (keyPath, version, service) ->
-    provider = new Provider(keyPath, version, service)
+    if service?
+      servicesByVersion = {}
+      servicesByVersion[version] = service
+    else
+      servicesByVersion = version
+
+    provider = new Provider(keyPath, servicesByVersion)
     @providers.push(provider)
 
     for consumer in @consumers

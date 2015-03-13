@@ -5,17 +5,22 @@ semver = require 'semver'
 
 module.exports =
 class Provider
-  constructor: (keyPath, @version, service) ->
+  constructor: (keyPath, servicesByVersion) ->
     @consumersDisposable = new CompositeDisposable
-    @service = {}
-    setValueAtKeyPath(@service, keyPath, service)
+    @servicesByVersion = {}
+    for version, service of servicesByVersion
+      @servicesByVersion[version] = {}
+      setValueAtKeyPath(@servicesByVersion[version], keyPath, service)
 
   provide: ({keyPath, versionRange, callback}) ->
-    if semver.satisfies(@version, versionRange)
-      if value = getValueAtKeyPath(@service, keyPath)
-        consumerDisposable = callback(value)
-        if typeof consumerDisposable?.dispose is 'function'
-          @consumersDisposable.add(consumerDisposable)
+    for version in Object.keys(@servicesByVersion).sort(semver.rcompare)
+      if semver.satisfies(version, versionRange)
+        if value = getValueAtKeyPath(@servicesByVersion[version], keyPath)
+          consumerDisposable = callback(value)
+          if typeof consumerDisposable?.dispose is 'function'
+            @consumersDisposable.add(consumerDisposable)
+          return
+    return
 
   destroy: ->
     @consumersDisposable.dispose()

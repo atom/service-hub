@@ -18,6 +18,20 @@ describe "ServiceHub", ->
 
       expect(services).toEqual [{x: 1}, {y: 2}]
 
+    it "invokes the callback with the newest version of a service provided in a given batch", ->
+      hub.provide "a",
+        "1.0.0": {w: 1}
+        "1.1.0": {x: 2}
+      hub.provide "a",
+        "1.2.0": {y: 3}
+      hub.provide "b",
+        "1.0.0": {z: 4}
+
+      services = []
+      hub.consume "a", "^1.0.0", (service) -> services.push(service)
+
+      expect(services).toEqual [{x: 2}, {y: 3}]
+
     it "invokes the callback with future service provisions that match the key path and version range", ->
       services = []
       hub.consume "a", "^1.0.0", (service) -> services.push(service)
