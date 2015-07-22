@@ -7,18 +7,24 @@ describe "ServiceHub", ->
   beforeEach ->
     hub = new ServiceHub
 
+  onNextTick = (fn) ->
+    waits(1)
+    runs(fn)
+
   describe "::consume(keyPath, versionString, callback)", ->
-    it "invokes the callback with existing service provisions that match the key path and version range", ->
-      hub.provide "a", "1.0.0", x: 1
-      hub.provide "a", "1.1.0", y: 2
-      hub.provide "b", "1.0.0", z: 3
+    it "invokes the callback with each existing service that matches the key path and version range", ->
+      hub.provide "a", "1.0.0", w: 1
+      hub.provide "b", "1.0.0", x: 2
 
       services = []
       hub.consume "a", "^1.0.0", (service) -> services.push(service)
-      expect(services).toEqual []
 
-      waits 1
-      runs -> expect(services).toEqual [{x: 1}, {y: 2}]
+      hub.provide "a", "1.1.0", y: 3
+      hub.provide "b", "1.2.0", z: 4
+
+      expect(services).toEqual []
+      onNextTick ->
+        expect(services).toEqual [{w: 1}, {y: 3}]
 
     it "invokes the callback with the newest version of a service provided in a given batch", ->
       hub.provide "a",
@@ -32,28 +38,25 @@ describe "ServiceHub", ->
       services = []
       hub.consume "a", "^1.0.0", (service) -> services.push(service)
 
-      waits 1
-      runs -> expect(services).toEqual [{x: 2}, {y: 3}]
+      expect(services).toEqual []
+      onNextTick ->
+        expect(services).toEqual [{x: 2}, {y: 3}]
 
-    it "invokes the callback with future service provisions that match the key path and version range", ->
+    it "invokes the callback when a new service is provided that matches the key path and version range", ->
       services = []
       hub.consume "a", "^1.0.0", (service) -> services.push(service)
 
-      hub.provide "a", "1.0.0", x: 1
-      hub.provide "a", "1.1.0", y: 2
-      hub.provide "b", "1.0.0", z: 3
+      onNextTick ->
+        expect(services).toEqual []
 
-      expect(services).toEqual [{x: 1}, {y: 2}]
+      onNextTick ->
+        hub.provide "a", "1.0.0", x: 1
+        hub.provide "a", "1.1.0", y: 2
+        hub.provide "b", "1.0.0", z: 3
+        expect(services).toEqual []
 
-    it "returns a disposable that removes the consumer", ->
-      services = []
-      disposable = hub.consume "a", "^1.0.0", (service) -> services.push(service)
-
-      hub.provide "a", "1.0.0", x: 1
-      disposable.dispose()
-      hub.provide "a", "1.1.0", y: 2
-
-      expect(services).toEqual [{x: 1}]
+      onNextTick ->
+        expect(services).toEqual [{x: 1}, {y: 2}]
 
     it "can specify a key path that navigates into the contents of a service", ->
       hub.provide "a", "1.0.0", b: c: 1
@@ -62,8 +65,8 @@ describe "ServiceHub", ->
       services = []
       hub.consume "a.b", "^1.0.0", (service) -> services.push(service)
 
-      waits 1
-      runs -> expect(services).toEqual [{c: 1}]
+      onNextTick ->
+        expect(services).toEqual [{c: 1}]
 
     it "can specify a key path that's shorter than the key path passed to ::provide", ->
       hub.provide "a.b", "1.0.0", c: 1
@@ -72,52 +75,51 @@ describe "ServiceHub", ->
       services = []
       hub.consume "a", "^1.0.0", (service) -> services.push(service)
 
-      waits 1
-      runs -> expect(services).toEqual [{b: c: 1}, {d: e: 2}]
+      onNextTick ->
+        expect(services).toEqual [{b: c: 1}, {d: e: 2}]
 
-  describe "::provide(keyPath, version, service)", ->
-    it "returns a disposable that removes the provider", ->
-      disposable1 = hub.provide "a", "1.0.0", x: 1
-      disposable2 = hub.provide "a", "1.1.0", y: 2
-
-      disposable1.dispose()
-
+  describe "disposing of a consumer", ->
+    it "does not invoke the consumer callback for any pending or newly-added providers", ->
       services = []
       disposable = hub.consume "a", "^1.0.0", (service) -> services.push(service)
 
-      waits 1
-      runs -> expect(services).toEqual [{y: 2}]
+      hub.provide "a", "1.0.0", x: 1
 
-    describe "when the provider is disposed", ->
-      it "disposes of consumer disposables", ->
-        provideDisposable = hub.provide "a", "1.0.0", x: 1
+      disposable.dispose()
 
-        teardownConsumerSpy1 = jasmine.createSpy('teardownConsumer1')
-        teardownConsumerSpy2 = jasmine.createSpy('teardownConsumer2')
+      hub.provide "a", "1.0.1", y: 2
 
-        hub.consume "a", "^1.0.0", (service) -> new Disposable(teardownConsumerSpy1)
-        hub.consume "a", "^1.0.0", (service) -> new Disposable(teardownConsumerSpy2)
+      onNextTick ->
+        expect(services).toEqual []
 
-        waits 1
-        runs ->
-          provideDisposable.dispose()
+  describe "disposing of a provider", ->
+    it "does not invoke the callbacks of any pending or newly-added consumers", ->
+      disposable1 = hub.provide "a", "1.0.0", x: 1
+      disposable2 = hub.provide "a", "1.1.0", y: 2
 
-          expect(teardownConsumerSpy1).toHaveBeenCalled()
-          expect(teardownConsumerSpy2).toHaveBeenCalled()
+      services1 = []
+      hub.consume "a", "^1.0.0", (service) -> services1.push(service)
 
-    describe "when the provider is disposed immediately", ->
-      it "does not call the consumer callbacks", ->
-        provideDisposable = hub.provide "a", "1.0.0", x: 1
+      disposable1.dispose()
 
-        teardownConsumerSpy1 = jasmine.createSpy('teardownConsumer1')
-        teardownConsumerSpy2 = jasmine.createSpy('teardownConsumer2')
+      services2 = []
+      hub.consume "a", "^1.0.0", (service) -> services2.push(service)
 
-        services = []
-        hub.consume "a", "^1.0.0", (service) -> services.push(service)
-        hub.consume "a", "^1.0.0", (service) -> services.push(service)
+      onNextTick ->
+        expect(services1).toEqual [{y: 2}]
+        expect(services2).toEqual [{y: 2}]
 
+    it "disposes of consumer Disposables", ->
+      provideDisposable = hub.provide "a", "1.0.0", x: 1
+
+      teardownConsumerSpy1 = jasmine.createSpy('teardownConsumer1')
+      teardownConsumerSpy2 = jasmine.createSpy('teardownConsumer2')
+
+      hub.consume "a", "^1.0.0", (service) -> new Disposable(teardownConsumerSpy1)
+      hub.consume "a", "^1.0.0", (service) -> new Disposable(teardownConsumerSpy2)
+
+      onNextTick ->
         provideDisposable.dispose()
 
-        waits 1
-        runs ->
-          expect(services).toEqual []
+        expect(teardownConsumerSpy1).toHaveBeenCalled()
+        expect(teardownConsumerSpy2).toHaveBeenCalled()
