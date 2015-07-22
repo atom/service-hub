@@ -15,8 +15,10 @@ describe "ServiceHub", ->
 
       services = []
       hub.consume "a", "^1.0.0", (service) -> services.push(service)
+      expect(services).toEqual []
 
-      expect(services).toEqual [{x: 1}, {y: 2}]
+      waits 1
+      runs -> expect(services).toEqual [{x: 1}, {y: 2}]
 
     it "invokes the callback with the newest version of a service provided in a given batch", ->
       hub.provide "a",
@@ -30,7 +32,8 @@ describe "ServiceHub", ->
       services = []
       hub.consume "a", "^1.0.0", (service) -> services.push(service)
 
-      expect(services).toEqual [{x: 2}, {y: 3}]
+      waits 1
+      runs -> expect(services).toEqual [{x: 2}, {y: 3}]
 
     it "invokes the callback with future service provisions that match the key path and version range", ->
       services = []
@@ -59,7 +62,8 @@ describe "ServiceHub", ->
       services = []
       hub.consume "a.b", "^1.0.0", (service) -> services.push(service)
 
-      expect(services).toEqual [{c: 1}]
+      waits 1
+      runs -> expect(services).toEqual [{c: 1}]
 
     it "can specify a key path that's shorter than the key path passed to ::provide", ->
       hub.provide "a.b", "1.0.0", c: 1
@@ -68,7 +72,8 @@ describe "ServiceHub", ->
       services = []
       hub.consume "a", "^1.0.0", (service) -> services.push(service)
 
-      expect(services).toEqual [{b: c: 1}, {d: e: 2}]
+      waits 1
+      runs -> expect(services).toEqual [{b: c: 1}, {d: e: 2}]
 
   describe "::provide(keyPath, version, service)", ->
     it "returns a disposable that removes the provider", ->
@@ -79,18 +84,40 @@ describe "ServiceHub", ->
 
       services = []
       disposable = hub.consume "a", "^1.0.0", (service) -> services.push(service)
-      expect(services).toEqual [{y: 2}]
 
-    it "disposes of consumer disposables when the provider is disposed", ->
-      provideDisposable = hub.provide "a", "1.0.0", x: 1
+      waits 1
+      runs -> expect(services).toEqual [{y: 2}]
 
-      teardownConsumerSpy1 = jasmine.createSpy('teardownConsumer1')
-      teardownConsumerSpy2 = jasmine.createSpy('teardownConsumer2')
+    describe "when the provider is disposed", ->
+      it "disposes of consumer disposables", ->
+        provideDisposable = hub.provide "a", "1.0.0", x: 1
 
-      hub.consume "a", "^1.0.0", (service) -> new Disposable(teardownConsumerSpy1)
-      hub.consume "a", "^1.0.0", (service) -> new Disposable(teardownConsumerSpy2)
+        teardownConsumerSpy1 = jasmine.createSpy('teardownConsumer1')
+        teardownConsumerSpy2 = jasmine.createSpy('teardownConsumer2')
 
-      provideDisposable.dispose()
+        hub.consume "a", "^1.0.0", (service) -> new Disposable(teardownConsumerSpy1)
+        hub.consume "a", "^1.0.0", (service) -> new Disposable(teardownConsumerSpy2)
 
-      expect(teardownConsumerSpy1).toHaveBeenCalled()
-      expect(teardownConsumerSpy2).toHaveBeenCalled()
+        waits 1
+        runs ->
+          provideDisposable.dispose()
+
+          expect(teardownConsumerSpy1).toHaveBeenCalled()
+          expect(teardownConsumerSpy2).toHaveBeenCalled()
+
+    describe "when the provider is disposed immediately", ->
+      it "does not call the consumer callbacks", ->
+        provideDisposable = hub.provide "a", "1.0.0", x: 1
+
+        teardownConsumerSpy1 = jasmine.createSpy('teardownConsumer1')
+        teardownConsumerSpy2 = jasmine.createSpy('teardownConsumer2')
+
+        services = []
+        hub.consume "a", "^1.0.0", (service) -> services.push(service)
+        hub.consume "a", "^1.0.0", (service) -> services.push(service)
+
+        provideDisposable.dispose()
+
+        waits 1
+        runs ->
+          expect(services).toEqual []
