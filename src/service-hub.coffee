@@ -53,8 +53,10 @@ class ServiceHub
     consumer = new Consumer(keyPath, versionRange, callback)
     @consumers.push(consumer)
 
-    for provider in @providers
-      provider.provide(consumer)
+    process.nextTick =>
+      for provider in @providers
+        provider.provide(consumer)
+      return
 
     new Disposable =>
       index = @consumers.indexOf(consumer)
