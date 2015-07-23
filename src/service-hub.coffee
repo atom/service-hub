@@ -29,13 +29,9 @@ class ServiceHub
     provider = new Provider(keyPath, servicesByVersion)
     @providers.push(provider)
 
-    consumers = @consumers.slice()
-    process.nextTick ->
-      unless provider.isDestroyed
-        for consumer in consumers
-          unless consumer.isDestroyed
-            provider.provide(consumer)
-      return
+    for consumer in @consumers
+      unless consumer.isDestroyed
+        provider.provide(consumer)
 
     new Disposable =>
       provider.destroy()
@@ -56,12 +52,11 @@ class ServiceHub
   # consumer.
   consume: (keyPath, versionRange, callback) ->
     consumer = new Consumer(keyPath, versionRange, callback)
-    @consumers.push(consumer)
 
-    providers = @providers.slice()
-    process.nextTick ->
+    process.nextTick =>
+      @consumers.push(consumer)
       unless consumer.isDestroyed
-        for provider in providers
+        for provider in @providers
           unless provider.isDestroyed
             provider.provide(consumer)
       return
@@ -69,4 +64,4 @@ class ServiceHub
     new Disposable =>
       consumer.destroy()
       index = @consumers.indexOf(consumer)
-      @consumers.splice(index, 1)
+      @consumers.splice(index, 1) if index >= 0

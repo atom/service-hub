@@ -49,13 +49,10 @@ describe "ServiceHub", ->
       onNextTick ->
         expect(services).toEqual []
 
-      onNextTick ->
         hub.provide "a", "1.0.0", x: 1
         hub.provide "a", "1.1.0", y: 2
         hub.provide "b", "1.0.0", z: 3
-        expect(services).toEqual []
 
-      onNextTick ->
         expect(services).toEqual [{x: 1}, {y: 2}]
 
     it "can specify a key path that navigates into the contents of a service", ->
