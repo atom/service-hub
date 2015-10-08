@@ -1,6 +1,6 @@
 {
   "name": "service-hub",
-  "version": "0.6.2",
+  "version": "0.7.0",
   "description": "A semantically versioned provider/consumer system for global application services.",
   "main": "./lib/service-hub",
   "scripts": {
