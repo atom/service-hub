@@ -65,3 +65,11 @@ class ServiceHub
       consumer.destroy()
       index = @consumers.indexOf(consumer)
       @consumers.splice(index, 1) if index >= 0
+
+  # Public: Clear out all service consumers and providers, disposing of any
+  # disposables returned by previous consumers.
+  clear: ->
+    for provider in @providers
+      provider.destroy()
+    @providers = []
+    @consumers = []

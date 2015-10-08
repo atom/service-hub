@@ -120,3 +120,27 @@ describe "ServiceHub", ->
 
         expect(teardownConsumerSpy1).toHaveBeenCalled()
         expect(teardownConsumerSpy2).toHaveBeenCalled()
+
+  describe "::clear()", ->
+    it "removes all providers and consumers, disposing of consumers' disposables", ->
+      hub.provide "a", "1.0.0", w: 1
+      hub.provide "b", "1.0.0", x: 2
+
+      consumeSpy = jasmine.createSpy('consume')
+      teardownConsumer1Spy = jasmine.createSpy('teardownConsumer1')
+      teardownConsumer2Spy = jasmine.createSpy('teardownConsumer2')
+
+      hub.consume "a", "^1.0.0", (service) -> new Disposable(teardownConsumer1Spy)
+      hub.consume "b", "^1.0.0", (service) -> new Disposable(teardownConsumer2Spy)
+
+      onNextTick ->
+        hub.clear()
+
+        expect(teardownConsumer1Spy).toHaveBeenCalled()
+        expect(teardownConsumer2Spy).toHaveBeenCalled()
+
+      runs ->
+        hub.consume "a", "^1.0.0", consumeSpy
+
+      onNextTick ->
+        expect(consumeSpy).not.toHaveBeenCalled()
