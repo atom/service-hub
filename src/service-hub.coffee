@@ -53,16 +53,12 @@ class ServiceHub
   consume: (keyPath, versionRange, callback) ->
     consumer = new Consumer(keyPath, versionRange, callback)
 
-    process.nextTick =>
-      @consumers.push(consumer)
-      unless consumer.isDestroyed
-        for provider in @providers
-          unless provider.isDestroyed
-            provider.provide(consumer)
-      return
+    @consumers.push(consumer)
+
+    for provider in @providers
+      provider.provide(consumer)
 
     new Disposable =>
-      consumer.destroy()
       index = @consumers.indexOf(consumer)
       @consumers.splice(index, 1) if index >= 0
 

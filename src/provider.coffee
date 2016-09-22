@@ -6,7 +6,6 @@ semver = require 'semver'
 module.exports =
 class Provider
   constructor: (keyPath, servicesByVersion) ->
-    @isDestroyed = false
     @consumersDisposable = new CompositeDisposable
     @servicesByVersion = {}
     for version, service of servicesByVersion
@@ -24,5 +23,4 @@ class Provider
     return
 
   destroy: ->
-    @isDestroyed = true
     @consumersDisposable.dispose()
