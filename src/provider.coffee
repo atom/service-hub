@@ -1,5 +1,5 @@
 {CompositeDisposable} = require 'event-kit'
-semver = require 'semver'
+{SemVer} = require 'semver'
 
 {getValueAtKeyPath, setValueAtKeyPath} = require './helpers'
 
@@ -8,14 +8,18 @@ class Provider
   constructor: (keyPath, servicesByVersion) ->
     @consumersDisposable = new CompositeDisposable
     @servicesByVersion = {}
+    @versions = []
     for version, service of servicesByVersion
       @servicesByVersion[version] = {}
+      @versions.push(new SemVer(version))
       setValueAtKeyPath(@servicesByVersion[version], keyPath, service)
 
+    @versions.sort((a, b) -> b.compare(a))
+
   provide: (consumer) ->
-    for version in Object.keys(@servicesByVersion).sort(semver.rcompare)
-      if semver.satisfies(version, consumer.versionRange)
-        if value = getValueAtKeyPath(@servicesByVersion[version], consumer.keyPath)
+    for version in @versions
+      if consumer.versionRange.test(version)
+        if value = getValueAtKeyPath(@servicesByVersion[version.toString()], consumer.keyPath)
           consumerDisposable = consumer.callback.call(null, value)
           if typeof consumerDisposable?.dispose is 'function'
             @consumersDisposable.add(consumerDisposable)
