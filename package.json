@@ -22,7 +22,7 @@
   ],
   "dependencies": {
     "event-kit": "^1.0.2",
-    "semver": "^4.2"
+    "semver": "^5.3.0"
   },
   "devDependencies": {
     "coffee-script": "^1.7.0",
