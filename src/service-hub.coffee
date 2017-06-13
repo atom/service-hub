@@ -29,7 +29,7 @@ class ServiceHub
     provider = new Provider(keyPath, servicesByVersion)
     @providers.push(provider)
 
-    for consumer in @consumers
+    for consumer in @consumers.slice()
       unless consumer.isDestroyed
         provider.provide(consumer)
 
@@ -55,7 +55,7 @@ class ServiceHub
 
     @consumers.push(consumer)
 
-    for provider in @providers
+    for provider in @providers.slice()
       provider.provide(consumer)
 
     new Disposable =>
@@ -65,7 +65,7 @@ class ServiceHub
   # Public: Clear out all service consumers and providers, disposing of any
   # disposables returned by previous consumers.
   clear: ->
-    for provider in @providers
+    for provider in @providers.slice()
       provider.destroy()
     @providers = []
     @consumers = []
